@@ -1,11 +1,15 @@
-import { Todo } from "../types/todo"
+import { Todo, Category, Priority } from "../types/todo"
 
-// Get todos from localStorage
+const TODOS_KEY = "todos"
+const DELETED_TODOS_KEY = "deletedTodos"
+
+// Get all active todos
 export const getTodos = async (): Promise<Todo[]> => {
   try {
-    const savedTodos = await localStorage.getItem("todos")
+    const savedTodos = await localStorage.getItem(TODOS_KEY)
     if (savedTodos) {
-      return JSON.parse(savedTodos)
+      const todos = JSON.parse(savedTodos);
+      return todos.sort((a: Todo, b: Todo) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     }
     return []
   } catch (error) {
@@ -17,7 +21,7 @@ export const getTodos = async (): Promise<Todo[]> => {
 // Save todos to localStorage
 export const saveTodos = async (todos: Todo[]): Promise<void> => {
   try {
-    await localStorage.setItem("todos", JSON.stringify(todos))
+    await localStorage.setItem(TODOS_KEY, JSON.stringify(todos))
   } catch (error) {
     console.error("Failed to save todos to localStorage:", error)
     throw error
@@ -27,7 +31,7 @@ export const saveTodos = async (todos: Todo[]): Promise<void> => {
 // Get deleted todos from localStorage
 export const getDeletedTodos = async (): Promise<Todo[]> => {
   try {
-    const savedDeletedTodos = await localStorage.getItem("deletedTodos")
+    const savedDeletedTodos = await localStorage.getItem(DELETED_TODOS_KEY)
     if (savedDeletedTodos) {
       return JSON.parse(savedDeletedTodos)
     }
@@ -41,7 +45,7 @@ export const getDeletedTodos = async (): Promise<Todo[]> => {
 // Save deleted todos to localStorage
 export const saveDeletedTodos = async (deletedTodos: Todo[]): Promise<void> => {
   try {
-    await localStorage.setItem("deletedTodos", JSON.stringify(deletedTodos))
+    await localStorage.setItem(DELETED_TODOS_KEY, JSON.stringify(deletedTodos))
   } catch (error) {
     console.error("Failed to save deleted todos to localStorage:", error)
     throw error
@@ -58,9 +62,25 @@ export const getTodoById = async (id: string): Promise<Todo | undefined> => {
     return undefined
   }
 }
-
+export const resetTodo = async (todo: Todo): Promise<void> => {
+  try {
+    if (todo.completed) {
+      await addTodo(todo.text, todo.category, todo.priority)
+    } else {
+      await deleteTodo(todo.id)
+      await addTodo(todo.text, todo.category, todo.priority)
+    }
+  } catch (error) {
+    console.error("Failed to reset todo:", error)
+    throw error
+  }
+}
 // Add a new todo
-export const addTodo = async (text: string): Promise<void> => {
+export const addTodo = async (
+  text: string,
+  category: Category,
+  priority: Priority
+): Promise<void> => {
   if (!text.trim()) return
 
   try {
@@ -69,7 +89,9 @@ export const addTodo = async (text: string): Promise<void> => {
       id: Date.now().toString(),
       text: text.trim(),
       completed: false,
-      createdAt: Date.now().toString(),
+      createdAt: new Date().toISOString(),
+      category,
+      priority,
     }
 
     await saveTodos([...todos, newTodo])
@@ -116,6 +138,7 @@ export const deleteTodo = async (id: string): Promise<void> => {
       await saveTodos(updatedTodos)
 
       const deletedTodos = await getDeletedTodos()
+      todoToDelete.deletedAt = new Date().toISOString()
       await saveDeletedTodos([...deletedTodos, todoToDelete])
     }
   } catch (error) {
@@ -147,6 +170,7 @@ export const restoreTodo = async (id: string): Promise<void> => {
       await saveDeletedTodos(updatedDeletedTodos)
 
       const todos = await getTodos()
+      todoToRestore.deletedAt = null
       await saveTodos([...todos, todoToRestore])
     }
   } catch (error) {

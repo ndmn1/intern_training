@@ -7,12 +7,14 @@ interface TodoListProps {
   todos: Todo[];
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
+  onReset: (todo: Todo) => void;
 }
 
 export default function TodoList({
   todos,
   onToggle,
   onDelete,
+  onReset,
 }: TodoListProps): React.ReactElement {
   if (todos.length === 0) {
     return (
@@ -23,7 +25,13 @@ export default function TodoList({
   return (
     <ul className="divide-y divide-gray-200">
       {todos.map((todo) => (
-        <TodoItem key={todo.id} todo={todo} onToggle={onToggle} onDelete={onDelete} />
+        <TodoItem
+          key={todo.id}
+          todo={todo}
+          onToggle={onToggle}
+          onDelete={onDelete}
+          onReset={onReset}
+        />
       ))}
     </ul>
   );

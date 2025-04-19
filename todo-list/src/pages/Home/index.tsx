@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { FaPlus } from "react-icons/fa";
 import TodoList from "../../components/todo/TodoList";
 import TodoFilter from "../../components/todo/TodoFilter";
-import { getTodos, toggleTodo, deleteTodo } from "../../utils/todoStorage";
+import { getTodos, toggleTodo, deleteTodo, resetTodo } from "../../utils/todoStorage";
 import { Todo } from "../../types/todo";
 import * as constants from "@/constants/routes";
 type FilterType = "all" | "active" | "completed";
@@ -56,7 +56,12 @@ export default function HomePage(): React.ReactElement {
       console.error(err);
     }
   };
-
+  const handleReset = async (todo: Todo) => {
+    await resetTodo(todo);
+    const updatedTodos = await getTodos();
+    setTodos(updatedTodos);
+  };
+  
   // Get filtered todos based on current filter
   const getFilteredTodos = (): Todo[] => {
     switch (filter) {
@@ -118,6 +123,7 @@ export default function HomePage(): React.ReactElement {
                 todos={getFilteredTodos()}
                 onToggle={handleToggleTodo}
                 onDelete={handleDeleteTodo}
+                onReset={handleReset}
               />
             </div>
           </div>

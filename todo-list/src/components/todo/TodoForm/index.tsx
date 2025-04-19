@@ -1,24 +1,49 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Category, Priority } from "../../../types/todo";
 
 interface TodoFormProps {
   initialText?: string;
-  onSubmit: (text: string) => Promise<void>;
+  initialCategory?: Category;
+  initialPriority?: Priority;
+  onSubmit: (data: {
+    text: string;
+    category: Category;
+    priority: Priority;
+  }) => Promise<void>;
   error?: string | null;
 }
 
+const CATEGORIES: { value: Category; label: string }[] = [
+  { value: "work", label: "Work" },
+  { value: "personal", label: "Personal" },
+  { value: "shopping", label: "Shopping" },
+  { value: "health", label: "Health" },
+  { value: "other", label: "Other" },
+];
+
+const PRIORITIES: { value: Priority; label: string; color: string }[] = [
+  { value: "high", label: "High", color: "text-red-600" },
+  { value: "medium", label: "Medium", color: "text-yellow-600" },
+  { value: "low", label: "Low", color: "text-green-600" },
+];
+
 export default function TodoForm({
   initialText,
+  initialCategory = "other",
+  initialPriority = "medium",
   onSubmit,
   error,
 }: TodoFormProps): React.ReactElement {
-  const [text, setText] = useState(initialText);
+  const [text, setText] = useState(initialText ?? "");
+  const [category, setCategory] = useState<Category>(initialCategory);
+  const [priority, setPriority] = useState<Priority>(initialPriority);
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!text?.trim()) return;
-    await onSubmit(text.trim());
+    await onSubmit({ text: text.trim(), category, priority });
   };
 
   return (
@@ -53,6 +78,60 @@ export default function TodoForm({
                 required
               />
             </div>
+
+            <div>
+              <label
+                htmlFor="category"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Category
+              </label>
+              <select
+                id="category"
+                value={category}
+                onChange={(e) => setCategory(e.target.value as Category)}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 p-3"
+              >
+                {CATEGORIES.map((cat) => (
+                  <option key={cat.value} value={cat.value}>
+                    {cat.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Priority
+              </label>
+              <div className="flex gap-4">
+                {PRIORITIES.map((pri) => (
+                  <label
+                    key={pri.value}
+                    className="flex items-center cursor-pointer"
+                  >
+                    <input
+                      type="radio"
+                      name="priority"
+                      value={pri.value}
+                      checked={priority === pri.value}
+                      onChange={(e) => setPriority(e.target.value as Priority)}
+                      className="sr-only"
+                    />
+                    <div
+                      className={`px-3 py-2 rounded-md ${
+                        priority === pri.value
+                          ? "bg-purple-600 text-white"
+                          : "bg-gray-100 hover:bg-gray-200"
+                      }`}
+                    >
+                      {pri.label}
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+
             <div className="flex justify-end space-x-2">
               <button
                 type="button"
