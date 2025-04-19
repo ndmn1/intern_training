@@ -10,9 +10,9 @@ interface IDefaultLayoutProps {
 
 const DefaultLayout = ({ children }: IDefaultLayoutProps) => {
 	return (
-		<div >
+		<div className="flex flex-col min-h-screen">
 			<Header />
-			<main >{children}</main>
+			<main className='mt-18 flex-1'>{children}</main>
 			<Footer />
 		</div>
 	);
