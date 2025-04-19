@@ -1,60 +1,52 @@
 import React, { useEffect, useState } from "react";
-import {
-  getDeletedTodos,
-  permanentlyDeleteTodo,
-  restoreTodo,
-} from "../../utils/todoStorage";
 import { FaTrashAlt, FaRedo } from "react-icons/fa";
 import clsx from "clsx";
-import { Todo } from "../../types/todo";
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
+import {
+  fetchDeletedTodos,
+  permanentlyDeleteTodo,
+  restoreTodo,
+} from "../../store/slices/todoSlice";
 
 export default function TrashPage(): React.ReactElement {
-  const [deletedTodos, setDeletedTodos] = useState<Todo[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const dispatch = useAppDispatch();
+  const { deletedTodos, isLoading, error } = useAppSelector(
+    (state) => state.todos
+  );
+  const [localError, setLocalError] = useState<string | null>(null);
 
-  // Load deleted todos from localStorage on initial render
+  // Load deleted todos from Redux store on initial render
   useEffect(() => {
-    const loadDeletedTodos = async () => {
+    const fetchTodos = async () => {
       try {
-        setIsLoading(true);
-        const loadedTodos = await getDeletedTodos();
-        setDeletedTodos(loadedTodos);
-        setError(null);
+        await dispatch(fetchDeletedTodos()).unwrap();
       } catch (err) {
-        setError("Failed to load deleted todos");
-        console.error(err);
-      } finally {
-        setIsLoading(false);
+        setLocalError("Failed to load deleted todos");
+        console.error("Failed to load deleted todos:", err);
       }
     };
-
-    loadDeletedTodos();
-  }, []);
+    fetchTodos();
+  }, [dispatch]);
 
   // Handle permanently delete todo
   const handlePermanentlyDelete = async (id: string): Promise<void> => {
     try {
-      await permanentlyDeleteTodo(id);
-      const updatedTodos = await getDeletedTodos();
-      setDeletedTodos(updatedTodos);
-      setError(null);
+      await dispatch(permanentlyDeleteTodo(id)).unwrap();
+      setLocalError(null);
     } catch (err) {
-      setError("Failed to permanently delete todo");
-      console.error(err);
+      setLocalError("Failed to permanently delete todo");
+      console.error("Failed to permanently delete todo:", err);
     }
   };
 
   // Handle restore todo
   const handleRestore = async (id: string): Promise<void> => {
     try {
-      await restoreTodo(id);
-      const updatedTodos = await getDeletedTodos();
-      setDeletedTodos(updatedTodos);
-      setError(null);
+      await dispatch(restoreTodo(id)).unwrap();
+      setLocalError(null);
     } catch (err) {
-      setError("Failed to restore todo");
-      console.error(err);
+      setLocalError("Failed to restore todo");
+      console.error("Failed to restore todo:", err);
     }
   };
 
@@ -73,9 +65,9 @@ export default function TrashPage(): React.ReactElement {
           <div className="p-6">
             <h2 className="text-2xl font-bold text-gray-800 mb-6">Trash</h2>
 
-            {error && (
+            {(error || localError) && (
               <div className="mb-4 p-2 bg-red-100 text-red-700 rounded">
-                {error}
+                {error || localError}
               </div>
             )}
 

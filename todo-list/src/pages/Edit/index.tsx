@@ -1,38 +1,28 @@
 import React, { useEffect, useState } from "react";
-import { getTodoById, updateTodo } from "../../utils/todoStorage";
 import { useNavigate, useParams } from "react-router-dom";
-import { Todo, Category, Priority } from "../../types/todo";
+import { Category, Priority } from "../../types/todo";
 import TodoForm from "../../components/todo/TodoForm";
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
+import { getTodoById, updateTodo } from "../../store/slices/todoSlice";
 
 export default function EditPage(): React.ReactElement {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [todo, setTodo] = useState<Todo | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const dispatch = useAppDispatch();
   const [error, setError] = useState<string | null>(null);
 
+  const { isLoading, currentTodo } = useAppSelector((state) => state.todos);
+
   useEffect(() => {
-    const loadTodo = async () => {
-      if (!id) return;
-
-      try {
-        setIsLoading(true);
-        const loadedTodo = await getTodoById(id);
-        if (loadedTodo) {
-          setTodo(loadedTodo);
-        } else {
-          setError("Todo not found");
-        }
-      } catch (err) {
-        setError("Failed to load todo");
-        console.error(err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadTodo();
-  }, [id]);
+    if (id) {
+      dispatch(getTodoById(id))
+        .unwrap()
+        .catch((err) => {
+          setError("Failed to load todo");
+          console.error("Failed to load todo:", err);
+        });
+    }
+  }, [dispatch, id]);
 
   const handleSubmit = async ({
     text,
@@ -46,11 +36,16 @@ export default function EditPage(): React.ReactElement {
     if (!id) return;
 
     try {
-      await updateTodo(id, { text, category, priority });
+      await dispatch(
+        updateTodo({
+          id,
+          updates: { text, category, priority },
+        })
+      ).unwrap();
       navigate("/");
     } catch (err) {
       setError("Failed to update todo");
-      console.error(err);
+      console.error("Failed to update todo:", err);
     }
   };
 
@@ -62,7 +57,7 @@ export default function EditPage(): React.ReactElement {
     );
   }
 
-  if (!todo) {
+  if (!currentTodo) {
     return (
       <div className="flex-grow container mx-auto px-4 py-8">
         <div className="text-center text-red-600">Todo not found</div>
@@ -72,9 +67,9 @@ export default function EditPage(): React.ReactElement {
 
   return (
     <TodoForm
-      initialText={todo.text}
-      initialCategory={todo.category}
-      initialPriority={todo.priority}
+      initialText={currentTodo.text}
+      initialCategory={currentTodo.category}
+      initialPriority={currentTodo.priority}
       onSubmit={handleSubmit}
       error={error}
     />

@@ -3,65 +3,62 @@ import { Link } from "react-router-dom";
 import { FaPlus } from "react-icons/fa";
 import TodoList from "../../components/todo/TodoList";
 import TodoFilter from "../../components/todo/TodoFilter";
-import { getTodos, toggleTodo, deleteTodo, resetTodo } from "../../utils/todoStorage";
 import { Todo } from "../../types/todo";
 import * as constants from "@/constants/routes";
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
+import {
+  fetchTodos,
+  updateTodo,
+  deleteTodo,
+  resetTodo,
+} from "../../store/slices/todoSlice";
+
 type FilterType = "all" | "active" | "completed";
 
 export default function HomePage(): React.ReactElement {
-  const [todos, setTodos] = useState<Todo[]>([]);
+  const dispatch = useAppDispatch();
+  const { todos, isLoading, error } = useAppSelector((state) => state.todos);
   const [filter, setFilter] = useState<FilterType>("all");
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  // Load todos from localStorage on initial render
+  // Load todos from Redux store on initial render
   useEffect(() => {
-    const loadTodos = async () => {
-      try {
-        setIsLoading(true);
-        const loadedTodos = await getTodos();
-        setTodos(loadedTodos);
-        setError(null);
-      } catch (err) {
-        setError("Failed to load todos");
-        console.error(err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadTodos();
-  }, []);
+    dispatch(fetchTodos());
+  }, [dispatch]);
 
   // Handle toggle todo
   const handleToggleTodo = async (id: string): Promise<void> => {
     try {
-      await toggleTodo(id);
-      const updatedTodos = await getTodos();
-      setTodos(updatedTodos);
+      await dispatch(
+        updateTodo({
+          id,
+          updates: {
+            completed: !todos.find((todo) => todo.id === id)?.completed,
+          },
+        })
+      ).unwrap();
     } catch (err) {
-      setError("Failed to toggle todo");
-      console.error(err);
+      console.error("Failed to toggle todo:", err);
     }
   };
 
   // Handle delete todo
   const handleDeleteTodo = async (id: string): Promise<void> => {
     try {
-      await deleteTodo(id);
-      const updatedTodos = await getTodos();
-      setTodos(updatedTodos);
+      await dispatch(deleteTodo(id)).unwrap();
     } catch (err) {
-      setError("Failed to delete todo");
-      console.error(err);
+      console.error("Failed to delete todo:", err);
     }
   };
+
+  // Handle reset todo
   const handleReset = async (todo: Todo) => {
-    await resetTodo(todo);
-    const updatedTodos = await getTodos();
-    setTodos(updatedTodos);
+    try {
+      await dispatch(resetTodo(todo)).unwrap();
+    } catch (err) {
+      console.error("Failed to reset todo:", err);
+    }
   };
-  
+
   // Get filtered todos based on current filter
   const getFilteredTodos = (): Todo[] => {
     switch (filter) {
@@ -79,7 +76,6 @@ export default function HomePage(): React.ReactElement {
     return todos.filter((todo) => !todo.completed).length;
   }, [todos]);
 
-
   if (isLoading) {
     return (
       <div className="container mx-auto  px-4 py-8">
@@ -95,7 +91,7 @@ export default function HomePage(): React.ReactElement {
           <div className="p-6">
             {error && (
               <div className="mb-4 p-2 bg-red-100 text-red-700 rounded">
-               {error}
+                {error}
               </div>
             )}
             <div className="flex justify-between items-center mb-6">

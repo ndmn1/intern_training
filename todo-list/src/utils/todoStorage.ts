@@ -59,7 +59,7 @@ export const getTodoById = async (id: string): Promise<Todo | undefined> => {
     return todos.find((todo) => todo.id === id)
   } catch (error) {
     console.error("Failed to get todo by ID:", error)
-    return undefined
+    throw error
   }
 }
 export const resetTodo = async (todo: Todo): Promise<void> => {

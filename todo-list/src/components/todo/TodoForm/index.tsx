@@ -30,8 +30,8 @@ const PRIORITIES: { value: Priority; label: string; color: string }[] = [
 
 export default function TodoForm({
   initialText,
-  initialCategory = "other",
-  initialPriority = "medium",
+  initialCategory = "work",
+  initialPriority = "low",
   onSubmit,
   error,
 }: TodoFormProps): React.ReactElement {
